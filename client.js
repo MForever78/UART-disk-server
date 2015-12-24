@@ -2,7 +2,15 @@ var SerialPort = require('serialport').SerialPort;
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
 
-var file = fs.readFileSync(argv.f);
+
+var file;
+
+try {
+  file = fs.readFileSync(argv.f);
+} catch(err) {
+  console.log("Usage: node client.js -f <image file>");
+  process.exit(-1);
+}
 
 //require("serialport").list(function (err, ports) {
 //  ports.forEach(function(port) {
