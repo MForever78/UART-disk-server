@@ -6,13 +6,13 @@ var path = require('path');
 var fd;
 
 if (!argv.f) {
-  console.log("Usage: node client.js -f <image file>");
+  console.log("Usage: node server.js -f <image file>");
   process.exit(-1);
 } else {
   try {
     fd = fs.openSync(path.join(__dirname, argv.f), 'r+');
   } catch(err) {
-    console.log("Usage: node client.js -f <image file>");
+    console.log("Usage: node server.js -f <image file>");
     process.exit(-1);
   }
 }
