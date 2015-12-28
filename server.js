@@ -43,7 +43,7 @@ sp.on("open", function() {
           // decode instruction
           console.log(instruction);
           var operate = Buffer.concat(instruction, 4).readUInt8(3);
-          var address = Buffer.concat(instruction, 4).readUInt32LE() << 1 >> 1;
+          var address = Buffer.concat(instruction, 4).readUInt32LE() << 2 >> 2;
 
           // decode operate
           operate = operate == 128 ? "write" : "read";
