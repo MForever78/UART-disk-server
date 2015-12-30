@@ -21,7 +21,6 @@ var sp = new SerialPort("/dev/cu.usbserial", {
   baudrate: 115200
 });
 
-var buf = new Buffer(512);
 var state = "idle";
 var dataCount = 0;
 var instruction = [];
@@ -36,35 +35,21 @@ sp.on("open", function() {
       case "idle":
         dataCount += data.length;
         instruction.push(data);
-        if (dataCount === 4) {
-          dataCount = 0;
-          state = "transfering";
-          
-          // decode instruction
-          console.log(instruction);
-          var operate = Buffer.concat(instruction, 4).readUInt8(3);
-          var address = Buffer.concat(instruction, 4).readUInt32LE() << 2 >> 2;
-
-          // decode operate
-          operate = operate == 128 ? "write" : "read";
-          console.log("Operate:", operate);
-          console.log("Address:", address);
-
-          if (operate === "write") {
-            sayHello();
-          } else {
-            var data = new Buffer(512);
-            fs.read(fd, data, address, 512, 0, writeToSerial);
-          }
-
-          // clear instruction
-          instruction = [];
-        }
+        if (dataCount === 4)
+          handleInstruction();
         break;
       
       case "transfering":
         state = "idle";
-        console.log("Read: Got goodbye:", data, "\n");
+        if (data.length == 1) {
+          console.log("Read: Got goodbye:", data, "\n");
+        } else {
+          // received length > 1 means instruction received
+          dataCount += data.length - 1;
+          instruction.push(data.slice(1));
+          if (dataCount == 4)
+            handleInstruction();
+        }
         break;
 
       case "receiving":
@@ -89,6 +74,44 @@ sp.on("open", function() {
     }
   });
 });
+
+function handleInstruction() {
+  dataCount = 0;
+  
+  // decode instruction
+  console.log(instruction);
+  var operate = Buffer.concat(instruction, 4).readUInt8(3);
+  var address = Buffer.concat(instruction, 4).readUInt32LE() << 3 >> 3;
+
+  // decode operate
+  operate = operate & 64;
+  operate = operate == 64 ? "write" : "read";
+  console.log("Operate:", operate);
+  console.log("Address:", address);
+
+  if (operate === "write") {
+    sayHello();
+  } else {
+    // handle breakpoint
+    if (address === 0x3fff) {
+      console.log("\n\n================================");
+      console.log("Breakpoint detected");
+      console.log("================================\n\n");
+      setTimeout(function() {
+        state = "transfering";
+        var data = new Buffer(512);
+        fs.read(fd, data, 0, 512, 0, writeToSerial);
+      }, 10000);
+    } else {
+      state = "transfering";
+      var data = new Buffer(512);
+      fs.read(fd, data, 0, 512, address * 512, writeToSerial);
+    }
+  }
+
+  // clear instruction
+  instruction = [];
+}
 
 function writeToSerial(err, length, data) {
   if (err) throw err;
