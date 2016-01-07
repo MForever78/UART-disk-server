@@ -101,7 +101,7 @@ function handleInstruction() {
         state = "transfering";
         var data = new Buffer(512);
         fs.read(fd, data, 0, 512, 0, writeToSerial);
-      }, 10000);
+      }, 5000);
     } else {
       state = "transfering";
       var data = new Buffer(512);
