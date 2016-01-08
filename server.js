@@ -12,7 +12,7 @@ if (!argv.f) {
   try {
     fd = fs.openSync(path.join(__dirname, argv.f), 'r+');
   } catch(err) {
-    console.log("Usage: node server.js -f <image file>");
+    console.log("Error: image file not found!");
     process.exit(-1);
   }
 }
