@@ -25,6 +25,8 @@ var state = "idle";
 var dataCount = 0;
 var instruction = [];
 var received = [];
+var operate;
+var address;
 
 sp.on("open", function() {
   console.log("Port has open...");
@@ -80,8 +82,8 @@ function handleInstruction() {
   
   // decode instruction
   console.log(instruction);
-  var operate = Buffer.concat(instruction, 4).readUInt8(3);
-  var address = Buffer.concat(instruction, 4).readUInt32LE() << 3 >> 3;
+  operate = Buffer.concat(instruction, 4).readUInt8(3);
+  address = Buffer.concat(instruction, 4).readUInt32LE() << 3 >> 3;
 
   // decode operate
   operate = operate & 64;
