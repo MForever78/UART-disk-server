@@ -57,20 +57,26 @@ sp.on("open", function() {
       case "receiving":
         received.push(data);
         dataCount += data.length;
+        // console.log("We have received", dataCount, "bytes data");
 
-        if (dataCount === 513) {
-          dataCount = 0;
+        if (dataCount >= 513) {
+          var data = Buffer.concat(received);
+          state = "idle";
+          instruction.push(data.slice(513));
+          dataCount -= 513;
+
           console.log("Write: Data receive complete");
           console.log("Write: Received goodbye");
 
-          var data = Buffer.concat(received, 512);
-          fs.write(fd, data, 0, 512, address * 512, function(err) {
-            if (err) throw err;
-            console.log("Write: Write to disk complete\n");
-            state = "idle";
-          });
+          data = data.slice(0, 512);
+          console.log("Data received:", data.toString("ascii"));
+          fs.writeSync(fd, data, 0, 512, address * 512);
+          console.log("Write: Write to disk complete\n");
 
           received = [];
+
+          if (dataCount === 4)
+            handleInstruction();
         }
         break;
     }
