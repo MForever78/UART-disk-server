@@ -2,6 +2,7 @@ var SerialPort = require('serialport').SerialPort;
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
 var path = require('path');
+var debug = require('debug')('uart');
 
 var fd;
 
@@ -32,7 +33,7 @@ sp.on("open", function() {
   console.log("Port has open...");
 
   sp.on('data', function(data) {
-    console.log("Data received:", data.toJSON());
+    debug("Data received:", data.toJSON());
     switch(state) {
       case "idle":
         dataCount += data.length;
@@ -44,7 +45,7 @@ sp.on("open", function() {
       case "transfering":
         state = "idle";
         if (data.length == 1) {
-          console.log("Read: Got goodbye:", data, "\n");
+          debug("Read: Got goodbye:", data, "\n");
         } else {
           // received length > 1 means instruction received
           dataCount += data.length - 1;
@@ -65,13 +66,14 @@ sp.on("open", function() {
           instruction.push(data.slice(513));
           dataCount -= 513;
 
-          console.log("Write: Data receive complete");
-          console.log("Write: Received goodbye");
+          debug("Write: Data receive complete");
+          debug("Write: Received goodbye");
 
           data = data.slice(0, 512);
-          console.log("Data received:", data.toString("ascii"));
+          debug("Data received:", data.toString("ascii"));
           fs.writeSync(fd, data, 0, 512, address * 512);
-          console.log("Write: Write to disk complete\n");
+          debug("Write: Write to disk complete\n");
+          console.log("done");
 
           received = [];
 
@@ -87,15 +89,14 @@ function handleInstruction() {
   dataCount = 0;
   
   // decode instruction
-  console.log(instruction);
+  debug(instruction);
   operate = Buffer.concat(instruction, 4).readUInt8(3);
   address = Buffer.concat(instruction, 4).readUInt32LE() << 3 >> 3;
 
   // decode operate
   operate = operate & 64;
   operate = operate == 64 ? "write" : "read";
-  console.log("Operate:", operate);
-  console.log("Address:", address);
+  process.stdout.write("Operate: " + operate + " " + address + "...");
 
   if (operate === "write") {
     sayHello();
@@ -127,11 +128,12 @@ function writeToSerial(err, length, data) {
   hello[0] = 0xff;
   sp.write(hello, function(err, result) {
     if (err) throw err;
-    console.log("Read: Say hello");
+    debug("Read: Say hello");
 
     sp.write(data, function(err, result) {
       if (err) throw err;
-      console.log("Read: Sent", result, "byte data");
+      debug("Read: Sent", result, "byte data");
+      console.log("done");
     });
   });
 }
@@ -142,7 +144,7 @@ function sayHello() {
   sp.write(hello, function(err, result) {
     if (err) throw err;
     state = "receiving";
-    console.log("Write: Say hello");
+    debug("Write: Say hello");
   })
 }
 
